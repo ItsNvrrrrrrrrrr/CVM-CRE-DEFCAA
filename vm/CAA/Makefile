@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -Wall -Wextra -std=c++11
 SRC = src/main.cpp src/vm.cpp src/utils.cpp
 OBJ = $(SRC:.cpp=.o)
-TARGET = my_vm
+TARGET = cvm
 DEFASM = defasm
 
 all: $(TARGET)

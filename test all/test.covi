@@ -1,1 +1,7 @@
-printnl "hello defcaa";
+public obj java{
+    public void main static(){
+        int = {a}
+        a = 5
+        printnl(a)   
+    }
+}

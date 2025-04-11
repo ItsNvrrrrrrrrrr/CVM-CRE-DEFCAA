@@ -1,0 +1,13 @@
+public object age{
+    public void main static(){
+        int = {age}
+        print("enter your age : ")
+        scanner.int(age)
+
+        if (age > 100){
+            printnl("sieu nguoi lon")
+        } else if (age >= 10){
+            printnl("thanh nien")
+        } else {printnl("tre trau")}
+    }
+}

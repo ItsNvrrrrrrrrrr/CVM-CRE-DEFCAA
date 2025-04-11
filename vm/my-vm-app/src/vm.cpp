@@ -154,17 +154,20 @@ void VirtualMachine::print() {
 
 void VirtualMachine::println() {
     // Opcode 0x0A: Print the entire stack content in push order, then add a newline.
-    if (stack.empty())
-        throw std::runtime_error("Stack underflow detected while performing PRINTLN!");
-    std::vector<char> temp;
-    while (!stack.empty()) {
-        temp.push_back(static_cast<char>(stack.top()));
-        stack.pop();
+    if (stack.empty()) {
+        // If no characters on the stack, output just a newline.
+        std::cout << std::endl;
+    } else {
+        std::vector<char> temp;
+        while (!stack.empty()) {
+            temp.push_back(static_cast<char>(stack.top()));
+            stack.pop();
+        }
+        std::reverse(temp.begin(), temp.end());
+        for (char c : temp)
+            std::cout << c;
+        std::cout << std::endl;
     }
-    std::reverse(temp.begin(), temp.end());
-    for (char c : temp)
-        std::cout << c;
-    std::cout << std::endl;
 }
 
 void VirtualMachine::printNoNewline() {

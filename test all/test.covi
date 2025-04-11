@@ -1,7 +1,5 @@
 public obj java{
     public void main static(){
-        int = {a}
-        a = 5
-        printnl(a)   
+        printnl("hello DEFCAA!")
     }
 }

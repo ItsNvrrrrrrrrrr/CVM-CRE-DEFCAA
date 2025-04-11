@@ -53,6 +53,35 @@ std::vector<uint8_t> compileAssignment(std::istringstream &iss) {
     return code;
 }
 
+// New helper: parse assignment without a preceding keyword ("let")
+std::vector<uint8_t> compileSimpleAssignment(const std::string &line) {
+    std::vector<uint8_t> code;
+    // Expecting format: <type_or_var> = <value>
+    std::istringstream iss(line);
+    std::string token, eq, value;
+    iss >> token >> eq >> value;
+    if(eq != "=")
+        throw std::runtime_error("Expected '=' in assignment: " + line);
+    // If token is a declaration keyword (e.g., "int"), then expect value to be in braces "{...}"
+    if(token == "int" || token == "str") {
+        if(value.front() != '{' || value.back() != '}')
+            throw std::runtime_error("Expected variable name in braces in declaration: " + line);
+        std::string varName = value.substr(1, value.size()-2);
+        if(varName.empty())
+            throw std::runtime_error("Missing variable name in declaration: " + line);
+        code.push_back(OP_PUSH_VAR);
+        code.push_back(static_cast<uint8_t>(varName[0]));
+        code.push_back(0); // default initialization
+    } else {
+        // Otherwise, treat as an assignment of a numeric value.
+        int val = std::stoi(value);
+        code.push_back(OP_PUSH_VAR);
+        code.push_back(static_cast<uint8_t>(token[0]));
+        code.push_back(static_cast<uint8_t>(val));
+    }
+    return code;
+}
+
 // New helper: parse if statement.
 std::vector<uint8_t> compileIfStatement(std::istringstream &iss, std::istream &in) {
     std::vector<uint8_t> code;
@@ -112,7 +141,7 @@ std::vector<uint8_t> compileWhileStatement(std::istringstream &iss, std::istream
     return code;
 }
 
-// Modified compileBlock to dispatch statements by first keyword.
+// Modified compileBlock to better detect print statements with no space.
 std::vector<uint8_t> compileBlock(std::istream &in) {
     std::vector<uint8_t> blockCode;
     std::string line;
@@ -120,6 +149,41 @@ std::vector<uint8_t> compileBlock(std::istream &in) {
         line = trim(line);
         if(!line.empty() && line[0]=='}') break;
         if(line.empty() || line.substr(0,2)=="//") continue;
+        
+        // New handling for print and printnl statements if line starts with the keyword.
+        if(line.rfind("printnl(", 0) == 0) {
+            // "printnl(" has length 8 (indexes 0..7)
+            std::string operand = line.substr(8); // corrected from 9 to 8
+            if(!operand.empty() && operand.back()==')')
+                operand.pop_back();
+            operand = trim(operand);
+            if(operand.size() < 2 || operand.front() != '\"' || operand.back() != '\"')
+                throw std::runtime_error("Expected quoted string in printnl statement: " + line);
+            std::string text = operand.substr(1, operand.size()-2);
+            for(char c : text) {
+                blockCode.push_back(OP_PUSH);
+                blockCode.push_back(static_cast<uint8_t>(c));
+                blockCode.push_back(OP_PRINT);
+            }
+            blockCode.push_back(OP_PRINTLN);
+            continue;
+        } else if(line.rfind("print(", 0) == 0) {
+            // "print(" has length 6 (indexes 0..5)
+            std::string operand = line.substr(6); // corrected from previous value if any
+            if(!operand.empty() && operand.back()==')')
+                operand.pop_back();
+            operand = trim(operand);
+            if(operand.size() < 2 || operand.front() != '\"' || operand.back() != '\"')
+                throw std::runtime_error("Expected quoted string in print statement: " + line);
+            std::string text = operand.substr(1, operand.size()-2);
+            for(char c : text) {
+                blockCode.push_back(OP_PUSH);
+                blockCode.push_back(static_cast<uint8_t>(c));
+                blockCode.push_back(OP_PRINT);
+            }
+            continue;
+        }
+        // ...existing code using istringstream to dispatch if, while, assignment, etc...
         std::istringstream iss(line);
         std::string firstToken;
         iss >> firstToken;
@@ -133,6 +197,9 @@ std::vector<uint8_t> compileBlock(std::istream &in) {
             blockCode.insert(blockCode.end(), part.begin(), part.end());
         } else if(tokenLower=="let") {
             std::vector<uint8_t> part = compileAssignment(iss);
+            blockCode.insert(blockCode.end(), part.begin(), part.end());
+        } else if(line.find("=") != std::string::npos) {
+            std::vector<uint8_t> part = compileSimpleAssignment(line);
             blockCode.insert(blockCode.end(), part.begin(), part.end());
         } else if(tokenLower=="print" || tokenLower=="printnl") {
             // ...existing print handling...

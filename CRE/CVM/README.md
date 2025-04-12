@@ -1,4 +1,4 @@
-# Virtual Machine Project
+# DEFCAA bytecode format project
 
 This project implements a simple virtual machine (VM) capable of executing bytecode files. The VM can handle two types of bytecode: custom bytecode and Java bytecode. 
 
